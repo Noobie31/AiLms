@@ -1,88 +1,220 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import logo from "../assets/logo.jpg"
-import { IoMdPerson } from "react-icons/io";
-import { GiHamburgerMenu } from "react-icons/gi";
-import { GiSplitCross } from "react-icons/gi";
+import { IoMdPerson } from "react-icons/io"
+import { GiHamburgerMenu } from "react-icons/gi"
+import { GiSplitCross } from "react-icons/gi"
+import { useNavigate } from 'react-router-dom'
+import { serverUrl } from '../App'
+import axios from 'axios'
+import { toast } from 'react-toastify'
+import { useDispatch, useSelector } from 'react-redux'
+import { setUserData } from '../redux/userSlice'
+import { HiAcademicCap, HiUser, HiLogout, HiViewGrid } from 'react-icons/hi'
 
-import { useNavigate } from 'react-router-dom';
-import { serverUrl } from '../App';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import { useDispatch, useSelector } from 'react-redux';
-import { setUserData } from '../redux/userSlice';
 function Nav() {
-  let [showHam,setShowHam] = useState(false)
-  let [showPro,setShowPro] = useState(false)
-  let navigate = useNavigate()
-  let dispatch = useDispatch()
-  let {userData} = useSelector(state=>state.user)
+  const [showHam, setShowHam] = useState(false)
+  const [showPro, setShowPro] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { userData } = useSelector(state => state.user)
+
+  // Change navbar bg on scroll
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (!e.target.closest('#profile-dropdown') && !e.target.closest('#profile-btn')) {
+        setShowPro(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const handleLogout = async () => {
     try {
-      const result = await axios.get(serverUrl + "/api/auth/logout" , {withCredentials:true})
-      console.log(result.data)
-     await dispatch(setUserData(null))
-      toast.success("LogOut Successfully")
+      await axios.get(serverUrl + "/api/auth/logout", { withCredentials: true })
+      dispatch(setUserData(null))
+      toast.success("Logged out successfully")
+      navigate("/login")
     } catch (error) {
-      console.log(error.response.data.message)
+      toast.error("Logout failed")
     }
   }
+
   return (
-    <div>
-    <div className='w-[100%] h-[70px] fixed top-0 px-[20px] py-[10px] flex items-center justify-between bg-[#00000047]  z-10'>
-     <div className='lg:w-[20%] w-[40%] lg:pl-[50px] '>
-        <img src={logo} className=' w-[60px]  rounded-[5px] border-2 border-white cursor-pointer' onClick={()=>navigate("/")} alt="" />
-      
-     </div>
-     
-     <div className='w-[30%] lg:flex items-center justify-center gap-4 hidden'>
+    <>
+      {/* ── DESKTOP NAVBAR ── */}
+      <div className={`w-full h-[70px] fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-10 transition-all duration-300 ${scrolled ? 'bg-black shadow-lg' : 'bg-black'}`}>
 
-        
-        {!userData ? <IoMdPerson className='w-[50px] h-[50px] fill-white cursor-pointer border-[2px] border-[#fdfbfb] bg-[#000000d5] rounded-full p-[10px]'onClick={()=>setShowPro(prev=>!prev)}/>:
+        {/* Logo */}
+        <div
+          className="flex items-center gap-3 cursor-pointer flex-shrink-0"
+          onClick={() => navigate("/")}
+        >
+          <img src={logo} className="w-9 h-9 rounded-lg border border-white/20 object-cover" alt="logo" />
+          <span className="text-white font-black text-base tracking-wider hidden sm:block">VIRTUAL COURSES</span>
+        </div>
 
-        
-        
-       <div className='w-[50px] h-[50px] rounded-full text-white flex items-center justify-center text-[20px] border-2 bg-black  border-white cursor-pointer' onClick={()=>setShowPro(prev=>!prev)}>
-         {userData.photoUrl ? <img src={userData.photoUrl} className='w-[100%] h-[100%] rounded-full object-cover' alt="" />
-         :
-         <div className='w-[50px] h-[50px] rounded-full text-white flex items-center justify-center text-[20px] border-2 bg-black  border-white cursor-pointer' >{userData?.name.slice(0,1).toUpperCase()}</div>}
-          </div>}
-           {userData?.role == "educator" ? <div className='px-[20px] py-[10px] border-2 lg:border-white border-black lg:text-white bg-[black] text-black rounded-[10px] text-[18px] font-light flex gap-2 cursor-pointer' onClick={()=>navigate("/dashboard")}>Dashboard</div>
-           :""}
-        {!userData && <span className='px-[20px] py-[10px] border-2 border-white text-white rounded-[10px] text-[18px] font-light cursor-pointer bg-[#000000d5] ' onClick={()=>navigate("/login")}>Login</span>}
-        {userData && <span className='px-[20px] py-[10px] bg-white text-black rounded-[10px] shadow-sm shadow-black text-[18px] cursor-pointer' onClick={handleLogout}>LogOut</span>}
-       
+        {/* Desktop nav links */}
+        <div className="hidden lg:flex items-center gap-2">
+          <button onClick={() => navigate("/allcourses")} className="text-white/70 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/10 transition-all">
+            Courses
+          </button>
+          {userData && (
+            <button onClick={() => navigate("/enrolledcourses")} className="text-white/70 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/10 transition-all">
+              My Learning
+            </button>
+          )}
+          {userData?.role === "educator" && (
+            <button onClick={() => navigate("/dashboard")} className="text-white/70 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/10 transition-all">
+              Dashboard
+            </button>
+          )}
+        </div>
 
-     </div>
-     {showPro && <div className=' absolute top-[110%] right-[15%] flex items-center flex-col justify-center gap-2 text-[16px] rounded-md bg-[white] px-[15px] py-[10px] border-[2px]  border-black hover:border-white hover:text-white cursor-pointer hover:bg-black  ' >
-      <span className='bg-[black] text-white  px-[30px] py-[10px] rounded-2xl hover:bg-gray-600' onClick={()=>navigate("/profile")}>My Profile</span>
-      <span className='bg-[black] text-white hover:bg-gray-600  px-[25px] py-[10px] rounded-2xl' onClick={()=>navigate("/enrolledcourses")}>My Courses</span>
-       </div>}
-     <GiHamburgerMenu className='w-[30px] h-[30px] lg:hidden fill-white cursor-pointer ' onClick={()=>setShowHam(prev=>!prev)}/>
-      
-     
-    </div>
-    <div className={`fixed  top-0 w-[100vw] h-[100vh] bg-[#000000d6] flex items-center justify-center flex-col gap-5 z-10 ${showHam?"translate-x-[0%] transition duration-600  ease-in-out" :"translate-x-[-100%] transition duration-600  ease-in-out"}`}>
-     <GiSplitCross  className='w-[35px] h-[35px] fill-white absolute top-5 right-[4%]' onClick={()=>setShowHam(prev=>!prev)}/>
-      {!userData ? <IoMdPerson className='w-[50px] h-[50px] fill-white cursor-pointer border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-full p-[10px]'/>:
-      <div className='w-[50px] h-[50px] rounded-full text-white flex items-center justify-center text-[20px] border-2 bg-black  border-white cursor-pointer' onClick={()=>setShowPro(prev=>!prev)}>
-         {userData.photoUrl ? <img src={userData.photoUrl} className='w-[100%] h-[100%] rounded-full object-cover ' alt="" />
-         :
-         <div className='w-[50px] h-[50px] rounded-full text-white flex items-center justify-center text-[20px] border-2 bg-black  border-white cursor-pointer' >{userData?.name.slice(0,1).toUpperCase()}</div>}</div>
-      }
-      
-      <span className='flex items-center justify-center gap-2  text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[65px] py-[20px] text-[18px] ' onClick={()=>navigate("/profile")}>My Profile </span>
-      <span className='flex items-center justify-center gap-2  text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[65px] py-[20px] text-[18px] ' onClick={()=>navigate("/enrolledcourses")}>My Courses </span>
-      
-      {userData?.role == "educator" ? <div className='flex items-center justify-center gap-2 text-[18px] text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[60px] py-[20px]' onClick={()=>navigate("/dashboard")}>Dashboard</div>
-           :""}
-      {!userData ?<span className='flex items-center justify-center gap-2 text-[18px] text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[80px] py-[20px]' onClick={()=>navigate("/login")}>Login</span>:
-      <span className='flex items-center justify-center gap-2 text-[18px] text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[75px] py-[20px]' onClick={handleLogout}>LogOut</span>}
-    
+        {/* Desktop right side */}
+        <div className="hidden lg:flex items-center gap-3">
+          {!userData ? (
+            <>
+              <button onClick={() => navigate("/login")} className="text-white/80 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/10 transition-all">
+                Login
+              </button>
+              <button onClick={() => navigate("/signup")} className="bg-white text-black text-sm font-black px-5 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+                Sign Up
+              </button>
+            </>
+          ) : (
+            <div className="relative">
+              <button
+                id="profile-btn"
+                onClick={() => setShowPro(p => !p)}
+                className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2 transition-all"
+              >
+                {userData.photoUrl
+                  ? <img src={userData.photoUrl} className="w-7 h-7 rounded-lg object-cover border border-white/20" alt="" />
+                  : <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white font-black text-sm">
+                    {userData?.name?.slice(0, 1).toUpperCase()}
+                  </div>
+                }
+                <span className="text-white text-sm font-semibold max-w-[100px] truncate">{userData.name}</span>
+                <svg className={`w-4 h-4 text-white/50 transition-transform duration-200 ${showPro ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-    </div>
-   </div>
-      
+              {/* Dropdown */}
+              {showPro && (
+                <div id="profile-dropdown" className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50">
+                  {/* User info */}
+                  <div className="px-4 py-3 border-b border-gray-100 mb-1">
+                    <p className="font-black text-sm text-black truncate">{userData.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{userData.email}</p>
+                  </div>
+
+                  <button onClick={() => { navigate("/profile"); setShowPro(false) }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors font-medium">
+                    <HiUser size={16} className="text-gray-400" /> My Profile
+                  </button>
+                  <button onClick={() => { navigate("/enrolledcourses"); setShowPro(false) }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors font-medium">
+                    <HiAcademicCap size={16} className="text-gray-400" /> My Courses
+                  </button>
+                  {userData?.role === "educator" && (
+                    <button onClick={() => { navigate("/dashboard"); setShowPro(false) }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors font-medium">
+                      <HiViewGrid size={16} className="text-gray-400" /> Dashboard
+                    </button>
+                  )}
+
+                  <div className="border-t border-gray-100 mt-1 pt-1">
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors font-medium">
+                      <HiLogout size={16} /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile hamburger */}
+        <button className="lg:hidden text-white p-1" onClick={() => setShowHam(p => !p)}>
+          <GiHamburgerMenu size={24} />
+        </button>
+      </div>
+
+      {/* ── MOBILE MENU ── */}
+      <div className={`fixed inset-0 bg-black z-50 flex flex-col transition-transform duration-300 ${showHam ? 'translate-x-0' : 'translate-x-full'}`}>
+        {/* Mobile header */}
+        <div className="flex items-center justify-between px-6 h-[70px] border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <img src={logo} className="w-8 h-8 rounded-lg border border-white/20" alt="" />
+            <span className="text-white font-black tracking-wider">VIRTUAL COURSES</span>
+          </div>
+          <button onClick={() => setShowHam(false)} className="text-white/60 hover:text-white">
+            <GiSplitCross size={24} />
+          </button>
+        </div>
+
+        {/* Mobile user info */}
+        {userData && (
+          <div className="px-6 py-5 border-b border-white/10 flex items-center gap-4">
+            {userData.photoUrl
+              ? <img src={userData.photoUrl} className="w-12 h-12 rounded-xl object-cover border-2 border-white/20" alt="" />
+              : <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white font-black text-lg">
+                {userData?.name?.slice(0, 1).toUpperCase()}
+              </div>
+            }
+            <div>
+              <p className="text-white font-black">{userData.name}</p>
+              <p className="text-white/50 text-xs capitalize">{userData.role}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile links */}
+        <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+          {[
+            { label: "Home", path: "/" },
+            { label: "All Courses", path: "/allcourses" },
+            ...(userData ? [{ label: "My Courses", path: "/enrolledcourses" }] : []),
+            ...(userData ? [{ label: "My Profile", path: "/profile" }] : []),
+            ...(userData?.role === "educator" ? [{ label: "Dashboard", path: "/dashboard" }] : []),
+            ...(userData?.role === "educator" ? [{ label: "Manage Courses", path: "/courses" }] : []),
+          ].map(item => (
+            <button
+              key={item.path}
+              onClick={() => { navigate(item.path); setShowHam(false) }}
+              className="w-full text-left px-4 py-3.5 text-white text-base font-semibold rounded-xl hover:bg-white/10 transition-colors"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile bottom */}
+        <div className="px-4 py-6 border-t border-white/10 space-y-3">
+          {!userData ? (
+            <>
+              <button onClick={() => { navigate("/login"); setShowHam(false) }} className="w-full border-2 border-white/20 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-white/10 transition-colors">
+                Login
+              </button>
+              <button onClick={() => { navigate("/signup"); setShowHam(false) }} className="w-full bg-white text-black py-3.5 rounded-xl font-black text-sm hover:bg-gray-100 transition-colors">
+                Sign Up Free
+              </button>
+            </>
+          ) : (
+            <button onClick={() => { handleLogout(); setShowHam(false) }} className="w-full bg-red-500/20 text-red-400 border border-red-500/30 py-3.5 rounded-xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2">
+              <HiLogout size={18} /> Logout
+            </button>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
 

@@ -3,9 +3,7 @@ import logo from '../assets/logo.jpg'
 import google from '../assets/google.jpg'
 import axios from 'axios'
 import { serverUrl } from '../App'
-import { MdOutlineRemoveRedEye } from "react-icons/md";
-
-import { MdRemoveRedEye } from "react-icons/md";
+import { MdOutlineRemoveRedEye, MdRemoveRedEye } from "react-icons/md"
 import { useNavigate } from 'react-router-dom'
 import { signInWithPopup } from 'firebase/auth'
 import { auth, provider } from '../../utils/Firebase'
@@ -15,91 +13,167 @@ import { useDispatch } from 'react-redux'
 import { setUserData } from '../redux/userSlice'
 
 function Login() {
-    const [email,setEmail]= useState("")
-    const [password,setPassword]= useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [show, setShow] = useState(false)
+    const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
-    let [show,setShow] = useState(false)
-     const [loading,setLoading]= useState(false)
-     let dispatch = useDispatch()
+    const dispatch = useDispatch()
+
     const handleLogin = async () => {
+        if (!email || !password) return toast.error("Please fill all fields")
         setLoading(true)
         try {
-            const result = await axios.post(serverUrl + "/api/auth/login" , {email , password} ,{withCredentials:true})
+            const result = await axios.post(serverUrl + "/api/auth/login", { email, password }, { withCredentials: true })
             dispatch(setUserData(result.data))
             navigate("/")
-            setLoading(false)
-            toast.success("Login Successfully")
+            toast.success("Welcome back!")
         } catch (error) {
-            console.log(error)
+            toast.error(error?.response?.data?.message || "Login failed")
+        } finally {
             setLoading(false)
-            toast.error(error.response.data.message)
         }
-        
     }
-     const googleLogin = async () => {
-            try {
-                const response = await signInWithPopup(auth,provider)
-                
-                let user = response.user
-                let name = user.displayName;
-                let email=user.email
-                let role=""
-                
-                
-                const result = await axios.post(serverUrl + "/api/auth/googlesignup" , {name , email , role}
-                    , {withCredentials:true}
-                )
-                dispatch(setUserData(result.data))
-                navigate("/")
-                toast.success("Login Successfully")
-            } catch (error) {
-                console.log(error)
-                toast.error(error.response.data.message)
-            }
-            
+
+    const googleLogin = async () => {
+        try {
+            const response = await signInWithPopup(auth, provider)
+            const { displayName: name, email } = response.user
+            const result = await axios.post(serverUrl + "/api/auth/googlesignup", { name, email, role: "" }, { withCredentials: true })
+            dispatch(setUserData(result.data))
+            navigate("/")
+            toast.success("Welcome!")
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Google login failed")
         }
-  return (
-    <div className='bg-[#dddbdb] w-[100vw] h-[100vh] flex items-center justify-center flex-col gap-3'>
-            <form className='w-[90%] md:w-200 h-150 bg-[white] shadow-xl rounded-2xl flex' onSubmit={(e)=>e.preventDefault()}>
-                <div className='md:w-[50%] w-[100%] h-[100%] flex flex-col items-center justify-center gap-4 '>
-                    <div><h1 className='font-semibold text-[black] text-2xl'>Welcome back</h1>
-                    <h2 className='text-[#999797] text-[18px]'>Login to your account</h2>
+    }
+
+    return (
+        <div className="min-h-screen bg-white flex">
+            {/* Left Panel */}
+            <div className="hidden lg:flex lg:w-1/2 bg-black flex-col justify-between p-16 relative overflow-hidden">
+                {/* Grid pattern */}
+                <div className="absolute inset-0 opacity-10"
+                    style={{
+                        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                        backgroundSize: '60px 60px'
+                    }} />
+
+                {/* Top */}
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3">
+                        <img src={logo} className="w-10 h-10 rounded-md border border-white/20" alt="" />
+                        <span className="text-white font-bold text-xl tracking-wider">VIRTUAL COURSES</span>
                     </div>
-                     <div className='flex flex-col gap-1 w-[85%] items-start justify-center px-3'>
-                        <label htmlFor="email" className='font-semibold'>
-                            Email
-                        </label>
-                        <input id='email' type="text" className='border-1 w-[100%] h-[35px] border-[#e7e6e6] text-[15px] px-[20px]' placeholder='Your email' onChange={(e)=>setEmail(e.target.value)} value={email} />
-                    </div>
-                     <div className='flex flex-col gap-1 w-[85%] items-start justify-center px-3 relative'>
-                        <label htmlFor="password" className='font-semibold'>
-                            Password
-                        </label>
-                        <input id='password' type={show?"text":"password"} className='border-1 w-[100%] h-[35px] border-[#e7e6e6] text-[15px] px-[20px]' placeholder='***********' onChange={(e)=>setPassword(e.target.value)} value={password} />
-                        {!show && <MdOutlineRemoveRedEye className='absolute w-[20px] h-[20px] cursor-pointer right-[5%] bottom-[10%]' onClick={()=>setShow(prev => !prev)}/>}
-                        {show && <MdRemoveRedEye className='absolute w-[20px] h-[20px] cursor-pointer right-[5%] bottom-[10%]' onClick={()=>setShow(prev => !prev)} />}
-                    </div>
-                     
-                    <button className='w-[80%] h-[40px] bg-black text-white cursor-pointer flex items-center justify-center rounded-[5px]' disabled={loading} onClick={handleLogin}>{loading?<ClipLoader size={30} color='white' /> : "Login"}</button>
-                    <span className='text-[13px] cursor-pointer text-[#585757]' onClick={()=>navigate("/forgotpassword")}>Forget your password?</span>
-    
-                    <div className='w-[80%] flex items-center gap-2'>
-                        <div className='w-[25%] h-[0.5px] bg-[#c4c4c4]'></div>
-                        <div className='w-[50%] text-[15px] text-[#999797] flex items-center justify-center '>Or continue with</div>
-                        <div className='w-[25%] h-[0.5px] bg-[#c4c4c4]'></div>
-                    </div>
-                
-                    <div className='w-[80%] h-[40px] border-1 border-[#d3d2d2] rounded-[5px] flex items-center justify-center ' onClick={googleLogin} ><img src={google} alt="" className='w-[25px]' /><span className='text-[18px] text-gray-500'>oogle</span> </div>
-                     <div className='text-[#6f6f6f]'>Don't have an account? <span className='underline underline-offset-1 text-[black]' onClick={()=>navigate("/signup")}>Sign up</span></div>
-    
                 </div>
-                <div className='w-[50%] h-[100%] rounded-r-2xl bg-[black] md:flex items-center justify-center flex-col hidden'><img src={logo} className='w-30 shadow-2xl' alt="" />
-                <span className='text-[white] text-2xl'>VIRTUAL COURSES</span>
+
+                {/* Center quote */}
+                <div className="relative z-10">
+                    <div className="text-6xl text-white/20 font-serif leading-none mb-4">"</div>
+                    <p className="text-white text-2xl font-light leading-relaxed mb-6">
+                        Knowledge is the only asset that grows when you share it.
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">AJ</div>
+                        <div>
+                            <p className="text-white font-medium text-sm">Alex Johnson</p>
+                            <p className="text-white/50 text-xs">Senior Educator, 10k+ students</p>
+                        </div>
+                    </div>
                 </div>
-            </form>
-          
+
+                {/* Bottom stats */}
+                <div className="relative z-10 flex gap-10">
+                    {[["10k+", "Students"], ["200+", "Courses"], ["4.9", "Rating"]].map(([num, label]) => (
+                        <div key={label}>
+                            <div className="text-white text-3xl font-bold">{num}</div>
+                            <div className="text-white/50 text-sm">{label}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Right Panel */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-16">
+                <div className="w-full max-w-md">
+                    {/* Mobile logo */}
+                    <div className="lg:hidden flex items-center gap-3 mb-10">
+                        <img src={logo} className="w-8 h-8 rounded-md" alt="" />
+                        <span className="font-bold text-lg tracking-wider">VIRTUAL COURSES</span>
+                    </div>
+
+                    <div className="mb-10">
+                        <h1 className="text-4xl font-black text-black tracking-tight mb-2">Welcome back</h1>
+                        <p className="text-gray-500 text-base">Sign in to continue your learning journey</p>
+                    </div>
+
+                    {/* Google button */}
+                    <button
+                        onClick={googleLogin}
+                        className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-xl py-3.5 mb-6 hover:border-black hover:bg-gray-50 transition-all duration-200 font-medium text-gray-700 group"
+                    >
+                        <img src={google} alt="" className="w-5 h-5" />
+                        Continue with Google
+                    </button>
+
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-gray-400 text-sm font-medium">or</span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+
+                    <form onSubmit={(e) => { e.preventDefault(); handleLogin() }} className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-semibold text-black mb-2">Email address</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@example.com"
+                                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-black transition-colors duration-200 bg-gray-50 focus:bg-white"
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="text-sm font-semibold text-black">Password</label>
+                                <button type="button" onClick={() => navigate("/forgotpassword")} className="text-sm text-gray-500 hover:text-black transition-colors">
+                                    Forgot password?
+                                </button>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type={show ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-black transition-colors duration-200 bg-gray-50 focus:bg-white pr-12"
+                                />
+                                <button type="button" onClick={() => setShow(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors">
+                                    {show ? <MdRemoveRedEye size={20} /> : <MdOutlineRemoveRedEye size={20} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-black text-white rounded-xl py-3.5 font-bold text-sm hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                            {loading ? <ClipLoader size={20} color="white" /> : "Sign In"}
+                        </button>
+                    </form>
+
+                    <p className="text-center text-sm text-gray-500 mt-6">
+                        Don't have an account?{" "}
+                        <button onClick={() => navigate("/signup")} className="text-black font-bold hover:underline">
+                            Sign up free
+                        </button>
+                    </p>
+                </div>
+            </div>
         </div>
-      )
+    )
 }
 
 export default Login

@@ -64,7 +64,10 @@ export const login=async(req,res)=>{
             sameSite: "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
-        return res.status(200).json(user)
+        // Remove password before sending user object
+        const userObj = user.toObject();
+        delete userObj.password;
+        return res.status(200).json(userObj)
 
     } catch (error) {
         console.log("login error")

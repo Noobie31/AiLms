@@ -10,5 +10,4 @@ let userRouter = express.Router()
 userRouter.get("/currentuser",isAuth,getCurrentUser)
 userRouter.post("/updateprofile",isAuth,upload.single("photoUrl"),UpdateProfile)
 
-
 export default userRouter
